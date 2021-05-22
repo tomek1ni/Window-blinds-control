@@ -14,7 +14,7 @@ from bluedot import BlueDot
 GPIO.setwarnings(False) # Ignore warning for now
 GPIO.setmode(GPIO.BCM) #
 
-time.sleep(10)
+#time.sleep(10)
 i2c = busio.I2C(board.SCL, board.SDA)
 ads = ADS.ADS1015(i2c)
 chan = AnalogIn(ads, ADS.P0)
@@ -38,7 +38,9 @@ arr = ['b', 's']
 leftState = False
 rightState = False
 timeState = False
-bd = BlueDot(cols=2, rows=1)
+bd = BlueDot(cols=2, rows=2)
+bd[0, 1].color = "green"
+bd[1, 1].color = "red"
 
 GPIO.setup(BUTT_L, GPIO.IN, pull_up_down=GPIO.PUD_DOWN) # Button L.
 GPIO.setup(BUTT_R, GPIO.IN, pull_up_down=GPIO.PUD_DOWN) # Button P.
@@ -147,6 +149,12 @@ while True:
         GPIO.output(DIR,0)
         while arr[1] == 'r' or (leftState == False and rightState == True):
             Steps()
+
+    elif bd[0,1].is_pressed == True:
+        open_blinds()
+
+    elif bd[1,1].is_pressed == True:
+        close_blinds()
 
     elif arr[1] == 's' or (leftState == False and rightState == False) or timeState == False:
         GPIO.output(SLEEP,0)
