@@ -11,42 +11,43 @@ import schedule
 from adafruit_ads1x15.analog_in import AnalogIn
 from bluedot import BlueDot
 
-GPIO.setwarnings(False) # Ignore warning for now
-GPIO.setmode(GPIO.BCM) #
+GPIO.setwarnings(False)         # Ignore warning for now
+GPIO.setmode(GPIO.BCM)          #
 
-#time.sleep(10)
+Wtime.sleep(10)                 # Wait 10 seconds after boot up, RP connects to the router.
 i2c = busio.I2C(board.SCL, board.SDA)
 ads = ADS.ADS1015(i2c)
 chan = AnalogIn(ads, ADS.P0)
 ads.gain = 2
 stop = False
-failSafe = False
+failSafe = False                # If true it stops close() function from going endlessly
 
 UDP_IP = "192.168.0.30"
 UDP_PORT = 5005
 
-sock = socket.socket(socket.AF_INET, # Internet
+sock = socket.socket(socket.AF_INET,    # Internet
                      socket.SOCK_DGRAM) # UDP
 sock.bind((UDP_IP, UDP_PORT))
 
-BUTT_L = 18
-BUTT_R = 23
-DIR = 17
-STEP = 27
-SLEEP = 22
-arr = ['b', 's']
-leftState = False
-rightState = False
-timeState = False
-bd = BlueDot(cols=2, rows=2)
-bd[0, 1].color = "green"
-bd[1, 1].color = "red"
+BUTT_L = 18                     # Left button pin
+BUTT_R = 23                     # Right button pin
+DIR = 17                        # Direction pin of A4988 driver
+STEP = 27                       # Step pin of A4988 driver
+SLEEP = 22                      # Sleep pin of A4988 driver
+arr = ['b', 's']                # Array controls direction over UDP, "s" means stop but it seems that it doesn't matter anymore. Not quite sure though
+leftState = False               # To keep the logical status of left button
+rightState = False              # To keep the logical status of right button
+timeState = False               # ? not suer waht for... some leftover 
+bd = BlueDot(cols=2, rows=2)    # Define a number of bluetooth buttons
+bd.border = True                # Give bluetooth buttons some border
+bd[0, 1].color = "green"        # Change a color of bluetooth button
+bd[1, 1].color = "red"          # Change a color of bluetooth button
 
 GPIO.setup(BUTT_L, GPIO.IN, pull_up_down=GPIO.PUD_DOWN) # Button L.
 GPIO.setup(BUTT_R, GPIO.IN, pull_up_down=GPIO.PUD_DOWN) # Button P.
-GPIO.setup(DIR, GPIO.OUT, initial=GPIO.LOW) # Directon 
-GPIO.setup(STEP, GPIO.OUT, initial=GPIO.LOW) # Step
-GPIO.setup(SLEEP, GPIO.OUT, initial=GPIO.LOW) # Sleep
+GPIO.setup(DIR, GPIO.OUT, initial=GPIO.LOW)             # Directon 
+GPIO.setup(STEP, GPIO.OUT, initial=GPIO.LOW)            # Step
+GPIO.setup(SLEEP, GPIO.OUT, initial=GPIO.LOW)           # Sleep
 
 def fun_udp():
     while True:
@@ -55,10 +56,10 @@ def fun_udp():
             sock.settimeout(0.15)               # Setting time out period for when data is not received (remote button not pressed)
             data, addr = sock.recvfrom(1024)    # buffer size is 1024 bytes
             arr = str(data).split()
-        except socket.timeout:      # In case of open/close command not coming from remote machine through UDP
-            arr[1] = 's'            # assign 's' to arr to prevent it from getting stuck opening or closing
+        except socket.timeout:                  # In case of open/close command not coming from remote machine through UDP
+            arr[1] = 's'                        # assign 's' to arr to prevent it from getting stuck opening or closing
 
-def fun_butts():
+def fun_butts():    # If physical or bluetooth buttons are pressed assigns the proper logical status to leftState rightState variables
     while True:
         global leftState
         global rightState
@@ -72,13 +73,13 @@ def fun_butts():
             rightState = False
         time.sleep(0.1)
 
-def Steps():
+def Steps():        # Perform one step on a stepper motor
     GPIO.output(STEP,1)
     time.sleep(0.0005)
     GPIO.output(STEP,0)
     time.sleep(0.0005)
 
-def average  ():
+def average():      # Holds last 10 hall sensor measurements and returns its average value
     global array
     tempArray = array [:9]
     for j in range (9,0,-1):
@@ -88,7 +89,7 @@ def average  ():
 #    print ("prevAver :", prevAver ,", aver :", aver)
     return(aver)
 
-def reset_aver ():
+def reset_aver():   # Resets all the hall sensor values
     global array
     global aver
     global prevAver
@@ -96,7 +97,7 @@ def reset_aver ():
     prevAver = 30010
     aver = 30000
 
-def close_blinds():
+def close_blinds(): # Function closes blinds until the last hall sensor values becomes smaller than current hall sensor values
     global prevAver
     global aver
     n = 0
@@ -121,7 +122,7 @@ def open_blinds ():
         close_blinds()
         GPIO.output(SLEEP,1)
         GPIO.output(DIR,1)
-        for i in range (2200):
+        for i in range (2300):
             Steps()
         GPIO.output(SLEEP,0)  
 
